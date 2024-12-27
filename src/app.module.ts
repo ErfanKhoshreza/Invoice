@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
 import { AppService } from './app.service';
+import { ScheduleModule } from '@nestjs/schedule';
 import { MongooseModule } from '@nestjs/mongoose';
 import { InvoicesModule } from './modules/invoices/invoice.module';
 
@@ -11,7 +12,9 @@ import { InvoicesModule } from './modules/invoices/invoice.module';
       isGlobal: true,
     }),
     MongooseModule.forRoot(process.env.MONGO_URI),
-    InvoicesModule
+    ScheduleModule.forRoot(), // Enable ScheduleModule for cron jobs
+    InvoicesModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],
