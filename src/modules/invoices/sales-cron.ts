@@ -3,17 +3,29 @@ import { Cron } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Invoice } from '../../schemas/invoice.schema';
+import { ClientProxy, Transport, ClientProxyFactory } from '@nestjs/microservices';
 import { generateSalesSummary, SalesSummary } from './sale-summary';
 import { EmailService } from './email.service';
 
 @Injectable()
 export class SalesSummaryCron {
     private readonly logger = new Logger(SalesSummaryCron.name);
+    private readonly client: ClientProxy;
 
     constructor(
         @InjectModel(Invoice.name) private readonly invoiceModel: Model<Invoice>,
-        private readonly emailService: EmailService,
-    ) {}
+    ) {
+        this.client = ClientProxyFactory.create({
+            transport: Transport.RMQ,
+            options: {
+                urls: [process.env.RABBITMQ_URL],
+                queue: process.env.RABBITMQ_QUEUE,
+                queueOptions: {
+                    durable: true,
+                },
+            },
+        });
+    }
 
     @Cron('0 12 * * *') // Runs daily at 12:00 PM
     async handleCron(): Promise<void> {
@@ -29,43 +41,15 @@ export class SalesSummaryCron {
                 date: { $gte: utcDate, $lt: tomorrow },
             }).exec();
 
-            const summaryReport: SalesSummary = {
-                date: utcDate.toISOString().split('T')[0], // Ensure UTC date is used
-                totalSales: invoices.reduce((sum, inv) => sum + inv.amount, 0),
-                skuSummary: invoices.reduce((skuSummary, inv) => {
-                    inv.items.forEach((item) => {
-                        skuSummary[item.sku] = (skuSummary[item.sku] || 0) + item.qt;
-                    });
-                    return skuSummary;
-                }, {}),
-            };
+            const summaryReport: SalesSummary = await generateSalesSummary(invoices);
 
-            this.logger.log(`Daily Sales Summary: ${JSON.stringify(summaryReport)}`);
+            this.logger.log(`Publishing daily sales summary to RabbitMQ: ${JSON.stringify(summaryReport)}`);
 
-            // Send email with the summary
-            const emailBodyText = `Date: ${summaryReport.date}\nTotal Sales: ${summaryReport.totalSales}\n`;
-            const emailBodyHtml = `
-      <h1>Daily Sales Summary</h1>
-      <p>Date: ${summaryReport.date}</p>
-      <p>Total Sales: ${summaryReport.totalSales}</p>
-      <h2>SKU Summary:</h2>
-      <ul>
-        ${Object.entries(summaryReport.skuSummary)
-                .map(([sku, quantity]) => `<li>${sku}: ${quantity}</li>`)
-                .join('')}
-      </ul>
-    `;
+            await this.client.emit(process.env.RABBITMQ_QUEUE, summaryReport).toPromise();
 
-            await this.emailService.sendSalesSummary(
-                process.env.RECIPIENT_EMAIL || 'admin@example.com',
-                'Daily Sales Summary',
-                emailBodyText,
-                emailBodyHtml,
-            );
-
-            this.logger.log('Mocked email sent with the sales summary.');
+            this.logger.log('Sales summary published to RabbitMQ.');
         } catch (error) {
-            this.logger.error('Failed to process daily sales summary', error.stack);
+            this.logger.error('Failed to publish daily sales summary', error.stack);
         }
     }
 }
