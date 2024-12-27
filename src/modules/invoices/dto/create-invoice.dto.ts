@@ -1,29 +1,40 @@
-import { IsNotEmpty, IsString, IsNumber, IsArray, ValidateNested } from 'class-validator';
+import {
+    IsNotEmpty,
+    IsString,
+    IsNumber,
+    IsArray,
+    ValidateNested,
+    ArrayMinSize,
+    IsPositive,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
-class Item {
-    @IsString()
+class ItemDto {
     @IsNotEmpty()
+    @IsString()
     sku: string;
 
+    @IsPositive()
     @IsNumber()
     qt: number;
 }
 
 export class CreateInvoiceDto {
-    @IsString()
     @IsNotEmpty()
+    @IsString()
     customer: string;
 
+    @IsPositive()
     @IsNumber()
     amount: number;
 
-    @IsString()
     @IsNotEmpty()
+    @IsString()
     reference: string;
 
     @IsArray()
+    @ArrayMinSize(1)
     @ValidateNested({ each: true })
-    @Type(() => Item)
-    items: Item[];
+    @Type(() => ItemDto)
+    items: ItemDto[];
 }

@@ -6,11 +6,10 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 
 @Injectable()
 export class InvoicesService {
-    constructor(@InjectModel(Invoice.name) private invoiceModel: Model<Invoice>) {}
+    constructor(@InjectModel(Invoice.name) private readonly invoiceModel: Model<Invoice>) {}
 
     async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
-        const newInvoice = new this.invoiceModel(createInvoiceDto);
-        return newInvoice.save();
+        return this.invoiceModel.create(createInvoiceDto); // Use the create method
     }
 
     async findById(id: string): Promise<Invoice> {
