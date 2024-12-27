@@ -1,10 +1,11 @@
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-
+import { SalesSummaryCron } from './modules/invoices/sales-cron';
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-
+    const cronService = app.get(SalesSummaryCron);
+    await cronService.handleCron();
 
     app.useGlobalPipes(
         new ValidationPipe({
