@@ -1,4 +1,3 @@
-// src/modules/invoices/invoices.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Invoice, InvoiceSchema } from '../../schemas/invoice.schema';

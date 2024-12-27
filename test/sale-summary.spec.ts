@@ -56,18 +56,14 @@ describe('SalesSummaryCron', () => {
 
         await cronService.handleCron();
 
-        // Log for debugging
-        console.log('Expected Date:', expectedSummary.date);
-        console.log('Received Email Text:', mockEmailService.sendSalesSummary.mock.calls[0][2]);
 
-        // Check if invoices were processed
+
         expect(mockInvoiceModel.find).toHaveBeenCalledWith({
             date: { $gte: expect.any(Date), $lt: expect.any(Date) },
         });
 
-        // Check if the email was sent
         expect(mockEmailService.sendSalesSummary).toHaveBeenCalledWith(
-            expect.any(String), // To address
+            expect.any(String),
             'Daily Sales Summary',
             expect.stringContaining(`Date: ${expectedSummary.date}\nTotal Sales: ${expectedSummary.totalSales}`),
             expect.stringContaining('<h1>Daily Sales Summary</h1>'),

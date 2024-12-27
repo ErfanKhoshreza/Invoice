@@ -9,7 +9,7 @@ export class InvoicesService {
     constructor(@InjectModel(Invoice.name) private readonly invoiceModel: Model<Invoice>) {}
 
     async create(createInvoiceDto: CreateInvoiceDto): Promise<Invoice> {
-        return this.invoiceModel.create(createInvoiceDto); // Use the create method
+        return this.invoiceModel.create(createInvoiceDto);
     }
 
     async findById(id: string): Promise<Invoice> {
